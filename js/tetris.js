@@ -29,9 +29,18 @@ var Board = {
 	board: [],
 	
 	level: 1,
+	piecesDropped: 0,
 	
 	init: function (elementId) {
 	
+	
+		// Array Remove - By John Resig (MIT Licensed)
+		Array.prototype.remove = function(from, to) {
+		  var rest = this.slice((to || from) + 1 || this.length);
+		  this.length = from < 0 ? this.length + from : from;
+		  return this.push.apply(this, rest);
+		};
+
 		var row=0;
 		var column=0;
 		var html='';
@@ -52,11 +61,18 @@ var Board = {
 	},
 	
 	start: function () {
-		this.running = true;
-		var self = this;
-		this.interval = setInterval(function () {
-			self.drop()
-			}, 1000);
+	    if (!this.running) {
+			this.running = true;
+			var self = this;
+			this.interval = setInterval(function () {
+				self.drop()
+				}, 1000);
+				
+			this.level = 1;
+			this.score = 0;
+			this.piecesDropped = 0;
+			this.startLevel(this.level);
+		}
 	},
 	
 	pause: function () {
@@ -73,21 +89,21 @@ var Board = {
 			return;
 		}
 		var piece = this.pieces[this.currentPiece];
+		
+		
 				
 		this.eraseBlock();
 		
-		this.previousRotation = this.currentRotation;
+		var previousRotation = this.currentRotation;
 		this.currentRotation++;
 		if (this.currentRotation >= piece.rotations.length) {
 			this.currentRotation = 0;
 		}
 		
-		while (this.pieceColumn + this.pieceRight() + 1 > this.boardWidth) {
-			this.moveLeft();	
-		}
-		
-		while (this.pieceColumn + this.pieceLeft() < 0) {
-			this.moveRight();	
+		if (this.pieceRight() > -1 && this.pieceColumn + this.pieceRight() + 1 > this.boardWidth) {
+			this.currentRotation = previousRotation;
+		} else if (this.pieceLeft() > -1 && this.pieceColumn + this.pieceLeft() < 0) {
+			this.currentRotation = previousRotation;
 		}
 
 		this.drawCurrentBlock();
@@ -107,37 +123,42 @@ var Board = {
 			this.currentRotation = piece.rotations.length - 1;
 		}
 		
-		while (this.pieceColumn + this.pieceRight() + 1 > this.boardWidth) {
-			this.moveLeft();	
+		if (this.pieceRight() > -1 && this.pieceColumn + this.pieceRight() + 1 > this.boardWidth) {
+			this.currentRotation = previousRotation;
+		} else if (this.pieceLeft() > -1 && this.pieceColumn + this.pieceLeft() < 0) {
+			this.currentRotation = previousRotation;
 		}
-		
-		while (this.pieceColumn + this.pieceLeft() < 0) {
-			this.moveRight();	
-		}
-				
+								
 		this.drawCurrentBlock();
 	},
 
 	moveLeft: function () {
-	    if (this.pieceColumn + this.pieceLeft() > 0) {
-			this.eraseBlock();		
+	    var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
+	    this.eraseBlock();
+	    if (this.canMoveLeft(rotation)) {					
 			this.pieceColumn--;
-			this.drawCurrentBlock();
 		}
+		this.drawCurrentBlock();
+
 	},
 	
 	moveRight: function () {
-	    if (this.pieceColumn + this.pieceRight() + 1 < this.boardWidth) {	
-			this.eraseBlock();
+	    var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
+	    this.eraseBlock();
+	    if (this.canMoveRight(rotation)) {					
 			this.pieceColumn++;
-			this.drawCurrentBlock();	
 		}
+		this.drawCurrentBlock();
 	},
 	
-	startLevel: function () {
-		$('body').css('background', Levels[this.level-1].background);
-		if ( Levels[this.level-1]['background-size'] ) {
-			$('body').css('background-size', Levels[this.level-1]['background-size'] );
+	startLevel: function (level) {
+		var idx=level-1;
+		if (idx >= Levels.length ) { 
+			idx = Levels % idx;
+		}
+		$('body').css('background', Levels[idx].background);
+		if ( Levels[idx]['background-size'] ) {
+			$('body').css('background-size', Levels[idx]['background-size'] );
 		}
 	},
 	
@@ -147,24 +168,118 @@ var Board = {
 		}	
 		if (this.currentPiece === undefined) {
 			this.currentPiece = Math.floor(Pieces.length * Math.random());
-			this.pieceRow = -3;
 			this.pieceColumn = 0;
-			this.startLevel();
-		} else {
-			console.log(this.pieceRow, this.boardHeight, this.pieceRow > this.boardHeight);
-			if (this.pieceRow > this.boardHeight-3) {
-				this.currentPiece = undefined;
-				return;
-			}
-			this.eraseBlock();
+			this.currentRotation = 0;
+			
+			var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
+			this.pieceRow = 0 - rotation.length;
 
-			this.pieceRow++;
+			if (this.piecesDropped > 0 && this.piecesDropped % 10 === 0) {
+				this.level++;
+				this.startLevel(this.level);
+			}
+			$('#piecesDropped').html('pieces dropped: ' + this.piecesDropped);
+			$('#level').html('level: ' + this.level);
+			$('#score').html('score: ' + this.score);
+			this.piecesDropped++;
+		} else {	
+			
+	        var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
+			this.eraseBlock();
+					
+			if (! this.canDrop(rotation)) {
+				this.drawCurrentBlock();
+				if (this.pieceRow < 0) {
+					console.log("game over");
+					window.alert("game over");
+					this.pause();
+					return;
+				}
+				this.currentPiece = undefined;
+				
+				// Detect row completions
+				
+				var rows = this.findCompletedRows();
+				var columnIdx = 0;
+				var i=0;
+				for (i=0; i<rows.length; i++) {
+					var rowIdx = rows[i];
+                    console.log("row to remove: " + rowIdx, rows.length, i);
+					this.board.splice(rowIdx,1);
+									
+					var newRow = [];
+					for (columnIdx=0; columnIdx<this.boardWidth; columnIdx++) {
+					    newRow[columnIdx] = -1;
+					}
+					
+					this.board.splice(0,0,newRow);
+				}
+				return;
+			} else {
+				this.pieceRow++;
+			}			
+
 		}
 		this.drawCurrentBlock();
 	},
-
+	
+	canDrop: function (rotation) {
+		var row=0;
+		var column=0;		
+		for (row=rotation.length-1; row >= 0; row--) {
+			for (column=0; column<rotation[0].length; column++) {
+				if  (this.pieceRow + row+1 < 0) {
+					continue;
+				}
+				if (rotation[row][column] !== 0 && this.pieceRow + row + 1>= this.boardHeight) {
+					return false;
+				} 
+				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row+1][this.pieceColumn + column] !== -1) {
+					return false;
+				}
+			}
+		}
+		return true;			
+	},
+	
+	canMoveLeft: function (rotation) {
+		var row=0;
+		var column=0;		
+		for (column=0; column<rotation[0].length; column++) {
+			for (row=0; row < rotation.length; row++) {			
+					
+				if (rotation[row][column] !== 0 && this.pieceColumn + column - 1< 0) {
+					return false;
+				} 
+				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row][this.pieceColumn + column - 1] !== -1) {
+					return false;
+				}
+			}
+		}
+		return true;	
+	},
+	
+	canMoveRight: function (rotation) {
+		var row=0;
+		var column=0;		
+		for (column=rotation[0].length-1; column>=0; column--) {
+			for (row=0; row < rotation.length; row++) {			
+					
+				if (rotation[row][column] !== 0 && this.pieceColumn + column + 1 > this.boardWidth) {
+					return false;
+				} 
+				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row][this.pieceColumn + column + 1] !== -1) {
+					return false;
+				}
+			}
+		}
+		return true;	
+	},
 	
     pieceLeft: function () {
+        if (this.currentPiece  === undefined) {
+            return -1;
+        }    
         var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
         var row=0;
 		var column=0;
@@ -180,6 +295,9 @@ var Board = {
     },
     
     pieceRight: function () {
+        if (this.currentPiece  === undefined) {
+            return -1;
+        }
         var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
         var row=0;
 		var column=0;
@@ -197,9 +315,10 @@ var Board = {
     findCompletedRows: function () {
         var row=0;
 		var column=0;
+		var allFull=true;
 		var completedRows=[];
     	for (row=0; row<this.boardHeight; row++) {
-    		var allFull=true;
+    		allFull=true;
 			for (column=0; column<this.boardWidth; column++) {
 				if (this.board[row][column] < 0) {
 					allFull=false;
@@ -231,6 +350,11 @@ var Board = {
 				 }
 			}
 		}
+		
+		column = 0;
+		row = 0;
+		//this.board[row + this.pieceRow][column + this.pieceColumn] = 2;
+		
 		this.drawBoard();
 	},
 
@@ -246,13 +370,12 @@ var Board = {
 		for (row=0; row<rotation.length; row++) {
 			for (column=0; column<rotation[0].length; column++) {
 				if (rotation[row][column] === 1) {        
-					if (row + this.pieceRow >= 0 && row + this.pieceRow < this.boardHeight ) {
+					if (row + this.pieceRow >= 0 && row + this.pieceRow < this.boardHeight && rotation[row][column] !== 0) {
 						this.board[row + this.pieceRow][column + this.pieceColumn] = -1;
 					}
 				}
 			}
 		}
-		//this.drawBoard();
 	},	
 	
 	drawBoard: function () {
@@ -261,11 +384,13 @@ var Board = {
     	for (row=0; row<this.boardHeight; row++) {
 			for (column=0; column<this.boardWidth; column++) {
 				if (this.board[row][column] >= 0) {
-					//$('#r' + (row) + 'c' + (column)).css('background-color', this.pieces[this.board[row][column]].color);				
-					$('#r' + (row) + 'c' + (column)).html(String.fromCharCode(this.board[row][column] + '98'));
+					$('#r' + (row) + 'c' + (column)).css('background-color', this.pieces[this.board[row][column]].color);				
+					//$('#r' + (row) + 'c' + (column)).html(String.fromCharCode(this.board[row][column] + '98'));
+					$('#r' + (row) + 'c' + (column)).addClass('active');
 				} else {
-					//$('#r' + (row) + 'c' + (column)).css('background-color','black');
-					$('#r' + (row) + 'c' + (column)).html('.');
+					$('#r' + (row) + 'c' + (column)).css('background-color','rgba(0,0,0,0.8)');
+					$('#r' + (row) + 'c' + (column)).removeClass('active');
+					//$('#r' + (row) + 'c' + (column)).html('.');
 				}
 			}
 		}    	
@@ -280,25 +405,21 @@ var TetrisController = {
 				case 32:
 					Board.drop();
 					break;
-// 				case 'j':
-// 				case 'J':
+
 				case 74:
 				case 106:
-					console.log('xx');
-					Board.moveLeft();//rotateClockwise();
+					Board.moveLeft();
 					break;
-// 				case 'l':
-// 				case 'L':
+
 				case 75:
 				case 107:
 					Board.rotateClockwise();
 					break;
 				case 76:
 				case 108:
-					Board.moveRight();//rotateClockwise();
+					Board.moveRight();
 					break;					
 			}
-			console.log(event.which);
 		});
 	}
 }

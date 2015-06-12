@@ -8,19 +8,28 @@
     width: 20px;
     height: 20px;
     background-color: rgba(0,0,0,0.8);
-    /*border: solid 1px white;*/
+    border: solid 1px rgba(0,0,0,0);
     display: inline-block;
     
     
 }
 
+.block.active {
+   	border: solid 1px black;
+}
+
     #board {
-        width: 200px;
+        width: 220px;
     	margin: 0 auto;
     	margin-top: 100px;
     	color: green;
     }
     
+.data {
+    width: 200px;
+    background: black;
+    color: white;
+}    
     
     
 </style>
@@ -46,5 +55,8 @@
 
 </div>
 <input type="button" onclick="Board.start()" value="Start"/> <input type="button" onclick="Board.start()" value="Pause"/>
+<div id="score" class="data">0</div>
+<div id="level" class="data">0</div>
+<div id="piecesDropped" class="data">0</div>
 </body>
 </html>
