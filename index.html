@@ -1,62 +1,116 @@
 <html>
 <head>
 
-<title>Teh Triss</title>
-<style type="text/css">
+    <title>Teh Triss</title>
+    <style type="text/css">
 
-.block {
-    width: 20px;
-    height: 20px;
-    background-color: rgba(0,0,0,0.8);
-    border: solid 1px rgba(0,0,0,0);
-    display: inline-block;
+        .block {
+            width: 20px;
+            height: 20px;
+            background-color: rgba(0,0,0,0.8);
+            border: solid 1px rgba(0,0,0,0);
+            display: inline-block;
+
+
+        }
+
+        .block.active {
+            border: solid 1px black;
+        }
+
+        #board {
+            width: 220px;
+            margin: 0 auto;
+            margin-top: 50px;
+            color: green;
+            box-shadow: 0px 0px 30px 5px #000000;
+        }
+
+        .data {
+            width: 200px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            margin-right: 20px;
+            padding: 4px;
+            border-radius: 4px;
+            border: rgba(255,255,255,0.5) 1px solid;
+            margin-top: 10px;
+        }    
+
+        #dataZone {
+            margin: 0 auto;
+            display: inline-block;
+            float: left;
+            margin: 40px;
+
+        }
+
+        h1 {
+
+            text-align: center;
+            width: 100%;
+            color: white;
+            background-color: rgba(0,0,0,0.7);
+            padding: 5px;
+            margin-top: 10px;
+        }
+
+        html, body {
+            margin: 0;
+        }
+        
+        audio {
+        	display: none;
+        }
+
+    </style>
+
+    <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
     
+    <script type="text/javascript" src="themes/default/default-theme.js"></script>
+    <script type="text/javascript" src="js/pieces.js"></script>
+    <script type="text/javascript" src="js/model.js"></script>
+    <script type="text/javascript" src="js/viewer.js"></script>
+    <script type="text/javascript" src="js/controller.js"></script>
     
-}
+    <script type="text/javascript">
 
-.block.active {
-   	border: solid 1px black;
-}
+		$(document).ready( function() {
+			TetrisModel.initialise();
+			TetrisViewer.initialise(TetrisModel, 'board');
+			TetrisController.initialise(TetrisModel);
+		});
 
-    #board {
-        width: 220px;
-    	margin: 0 auto;
-    	margin-top: 100px;
-    	color: green;
-    }
-    
-.data {
-    width: 200px;
-    background: black;
-    color: white;
-}    
-    
-    
-</style>
-
-<script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
-<script type="text/javascript" src="js/levels.js"></script>
-<script type="text/javascript" src="js/pieces.js"></script>
-<script type="text/javascript" src="js/tetris.js"></script>
-
-<!-- <script type="text/javascript" src="pieces.js"></script> -->
-<script type="text/javascript">
-
-
-</script>
+    </script>
 
 </head>
 
 <body>
+    <h1>Teh Triss M</h1>
+    <div id="dataZone">
+        <div id="score" class="data">0</div>
+        <div id="level" class="data">0</div>
+        <div id="piecesDropped" class="data">0</div>
+        <div id="nextPiece" class="data"></div>
+        <div id="controls" class="data">
+            <input type="button" onclick="TetrisModel.start()" value="Start"/> 
+            <input type="button" onclick="TetrisModel.pause()" value="Pause"/>
+            <ul>
+            <li>Left: J</li>
+            <li>Right: L</li>
+            <li>Rotate: K</li>
+            <li>Drop: space</li> 
+            </ul>           
+        </div>
+        <div id="artCredit" class="data"></div>        
+    </div>
+
+    <div id="board">
 
 
-<div id="board">
+    </div>
+    
+    <audio> </audio>
 
-
-</div>
-<input type="button" onclick="Board.start()" value="Start"/> <input type="button" onclick="Board.start()" value="Pause"/>
-<div id="score" class="data">0</div>
-<div id="level" class="data">0</div>
-<div id="piecesDropped" class="data">0</div>
 </body>
 </html>
