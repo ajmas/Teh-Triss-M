@@ -147,7 +147,7 @@ var TetrisModel = {
 	
 	
 	rotateClockwise: function () {    
-		if (!this.running || !this.currentPiece) {
+		if (!this.running || this.currentPiece  === undefined) {
 			return;
 		}
 		var piece = this.pieces[this.currentPiece];
@@ -178,7 +178,7 @@ var TetrisModel = {
 	},
 
 	rotateCounterClockwise: function () {
-		if (!this.running || !this.currentPiece) {
+		if (!this.running || this.currentPiece === undefined) {
 			return;
 		}	
 		var piece = this.pieces[this.currentPiece];
@@ -207,7 +207,7 @@ var TetrisModel = {
 	},
 
 	moveLeft: function () {
-		if (!this.running || !this.currentPiece) {
+		if (!this.running || this.currentPiece === undefined) {
 			return;
 		}
 
@@ -229,7 +229,7 @@ var TetrisModel = {
 	},
 	
 	moveRight: function () {
-		if (!this.running || !this.currentPiece) {
+		if (!this.running || this.currentPiece === undefined) {
 			return;
 		}
 
@@ -365,7 +365,7 @@ var TetrisModel = {
 				if (rotation[row][column] !== 0 && this.pieceColumn + column - 1< 0) {
 					return false;
 				} 
-				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row][this.pieceColumn + column - 1] !== -1) {
+				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row] !== undefined && this.board[this.pieceRow + row][this.pieceColumn + column - 1] !== -1) {
 					return false;
 				}
 			}
@@ -382,7 +382,7 @@ var TetrisModel = {
 				if (rotation[row][column] !== 0 && this.pieceColumn + column + 1 > this.boardWidth) {
 					return false;
 				} 
-				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row][this.pieceColumn + column + 1] !== -1) {
+				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row] !== undefined && this.board[this.pieceRow + row][this.pieceColumn + column + 1] !== -1) {
 					return false;
 				}
 			}
@@ -466,7 +466,6 @@ var TetrisModel = {
 		
 		column = 0;
 		row = 0;
-		//this.board[row + this.pieceRow][column + this.pieceColumn] = 2;
 		
 		this.drawBoard();
 	},
