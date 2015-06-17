@@ -105,7 +105,7 @@ var TetrisModel = {
 				
 			if (this.gameover) {	
 				this.clearBoard();
-				this.drawBoard();
+				this.renderBoard();
 				this.level = 1;
 				this.score = 0;
 				this.piecesDropped = 0;
@@ -145,32 +145,26 @@ var TetrisModel = {
 		}
 	},
 	
-	
+	startLevel: function (level) {
+		this.fireEvent('levelChange', {
+			score: this.score,
+			level: this.level,
+			rowsCompleted: this.rowsCompleted,
+			piecesDropped: this.piecesDropped
+		});		
+	},
+
 	rotateClockwise: function () {    
 		if (!this.running || this.currentPiece  === undefined) {
 			return;
 		}
-		var piece = this.pieces[this.currentPiece];
-		
-		
-				
-		this.eraseBlock();
-		
-		var previousRotation = this.currentRotation;
-		this.currentRotation++;
-		if (this.currentRotation >= piece.rotations.length) {
-			this.currentRotation = 0;
-		}
-		
-		if (this.pieceRight() > -1 && this.pieceColumn + this.pieceRight() + 1 > this.boardWidth) {
-			this.currentRotation = previousRotation;
-		} else if (this.pieceLeft() > -1 && this.pieceColumn + this.pieceLeft() < 0) {
-			this.currentRotation = previousRotation;
+
+		var candidateRotation = this.currentRotation + 1;
+		if (candidateRotation >= this.pieces[this.currentPiece].rotations.length) {
+			candidateRotation = 0;
 		}
 
-		this.drawCurrentBlock();
-
-		if (this.currentRotation != previousRotation) {
+		if (this.move(0, 0, candidateRotation)) {
 			this.fireEvent('pieceRotated', {
 				direction: 'clockwise'
 			});
@@ -181,82 +175,17 @@ var TetrisModel = {
 		if (!this.running || this.currentPiece === undefined) {
 			return;
 		}	
-		var piece = this.pieces[this.currentPiece];
 		
-		this.eraseBlock();
-		
-		this.previousRotation = this.currentRotation;
-		this.currentRotation--;
-		if (this.currentRotation < 0) {
-			this.currentRotation = piece.rotations.length - 1;
-		}
-		
-		if (this.pieceRight() > -1 && this.pieceColumn + this.pieceRight() + 1 > this.boardWidth) {
-			this.currentRotation = previousRotation;
-		} else if (this.pieceLeft() > -1 && this.pieceColumn + this.pieceLeft() < 0) {
-			this.currentRotation = previousRotation;
-		}
-								
-		this.drawCurrentBlock();
+		var candidateRotation = this.currentRotation - 1;
+		if (candidateRotation < 0) {
+			candidateRotation = this.pieces[this.currentPiece].rotations.length - 1;
+		}		
 
-		if (this.currentRotation != previousRotation) {
+		if (this.move(0, 0, candidateRotation)) {
 			this.fireEvent('pieceRotated', {
 				direction: 'counterClockwise'
 			});
 		}		
-	},
-
-	moveLeft: function () {
-		if (!this.running || this.currentPiece === undefined) {
-			return;
-		}
-
-	    var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
-	    var canMove = false;
-	    this.eraseBlock();
-
-	    canMove = this.canMoveLeft(rotation);
-	    if (canMove) {					
-			this.pieceColumn--;
-		}
-		this.drawCurrentBlock();
-
-		if (canMove) {
-			this.fireEvent('pieceMoved', {
-				direction: 'left'
-			});
-		}
-	},
-	
-	moveRight: function () {
-		if (!this.running || this.currentPiece === undefined) {
-			return;
-		}
-
-	    var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
-	    var canMove = false;
-
-	    this.eraseBlock();
-	    canMove = this.canMoveRight(rotation);
-	    if (canMove) {					
-			this.pieceColumn++;
-		}
-		this.drawCurrentBlock();
-
-		if (canMove) {
-			this.fireEvent('pieceMoved', {
-				direction: 'right'
-			});
-		}		
-	},	
-	
-	startLevel: function (level) {
-		this.fireEvent('levelChange', {
-			score: this.score,
-			level: this.level,
-			rowsCompleted: this.rowsCompleted,
-			piecesDropped: this.piecesDropped
-		});		
 	},
 	
 	drop: function () {		
@@ -277,13 +206,8 @@ var TetrisModel = {
 			}
 
 			this.piecesDropped++;
-		} else {	
-			
-	        var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
-			this.eraseBlock();
-					
-			if (! this.canDrop(rotation)) {
-				this.drawCurrentBlock();
+		} else {				
+			if (! this.move(1, 0, this.currentRotation)) {
 				if (this.pieceRow < 0) {
 					this.pause();
 					console.log("game over");
@@ -316,7 +240,7 @@ var TetrisModel = {
 
 				for (i=0; i<rows.length; i++) {
 					var rowIdx = rows[i];
-                    console.log("row to remove: " + rowIdx, rows.length, i);
+                    //console.log("row to remove: " + rowIdx, rows.length, i);
 					this.board.splice(rowIdx,1);
 									
 					var newRow = [];
@@ -326,106 +250,67 @@ var TetrisModel = {
 					
 					this.board.splice(0,0,newRow);
 				}
-
-
-				return;
-			} else {
-				this.pieceRow++;
-			}			
-
+			} 		
 		}
+	},
+
+	move: function (rowDelta, columnDelta, rotationIdx) {
+		if (!this.running || this.currentPiece === undefined) {
+			return;
+		}
+
+		var rotation = this.pieces[this.currentPiece].rotations[rotationIdx];
+
+		var moved = false;
+		this.eraseBlock();
+
+		if (this.canMove(this.pieceRow + rowDelta, this.pieceColumn + columnDelta, rotation)) {
+			this.pieceRow = this.pieceRow + rowDelta;
+			this.pieceColumn = this.pieceColumn + columnDelta;
+			this.currentRotation = rotationIdx;
+			moved = true;
+		}
+
 		this.drawCurrentBlock();
+
+		return moved;
+	},
+
+	moveLeft: function () {
+		if (this.move(0, -1, this.currentRotation)) {
+			this.fireEvent('pieceMoved', {
+				direction: 'left'
+			});
+		}
 	},
 	
-	canDrop: function (rotation) {
+	moveRight: function () {
+		if (this.move(0, +1, this.currentRotation)) {
+			this.fireEvent('pieceMoved', {
+				direction: 'right'
+			});
+		}	
+	},		
+	
+	canMove: function (newRow, newColumn, rotation) {
 		var row=0;
-		var column=0;		
+		var column=0;
 		for (row=rotation.length-1; row >= 0; row--) {
 			for (column=0; column<rotation[0].length; column++) {
-				if  (this.pieceRow + row+1 < 0) {
+				if (rotation[row][column] === 0 || newRow+row < 0) {
 					continue;
 				}
-				if (rotation[row][column] !== 0 && this.pieceRow + row + 1>= this.boardHeight) {
+				else if (newColumn + column < 0 || newColumn + column >= this.boardWidth || newRow + row >= this.boardHeight) {
 					return false;
-				} 
-				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row+1][this.pieceColumn + column] !== -1) {
+				}
+				else if (this.board[newRow+row][newColumn+column] !== -1) {
 					return false;
 				}
 			}
 		}
-		return true;			
+		return true;
 	},
-	
-	canMoveLeft: function (rotation) {
-		var row=0;
-		var column=0;		
-		for (column=0; column<rotation[0].length; column++) {
-			for (row=0; row < rotation.length; row++) {			
-					
-				if (rotation[row][column] !== 0 && this.pieceColumn + column - 1< 0) {
-					return false;
-				} 
-				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row] !== undefined && this.board[this.pieceRow + row][this.pieceColumn + column - 1] !== -1) {
-					return false;
-				}
-			}
-		}
-		return true;	
-	},
-	
-	canMoveRight: function (rotation) {
-		var row=0;
-		var column=0;		
-		for (column=rotation[0].length-1; column>=0; column--) {
-			for (row=0; row < rotation.length; row++) {			
-					
-				if (rotation[row][column] !== 0 && this.pieceColumn + column + 1 > this.boardWidth) {
-					return false;
-				} 
-				else if (rotation[row][column] !== 0 && this.board[this.pieceRow + row] !== undefined && this.board[this.pieceRow + row][this.pieceColumn + column + 1] !== -1) {
-					return false;
-				}
-			}
-		}
-		return true;	
-	},
-	
-    pieceLeft: function () {
-        if (this.currentPiece  === undefined) {
-            return -1;
-        }    
-        var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
-        var row=0;
-		var column=0;
-		var leftMost=rotation[0].length;
-		for (row=0; row<rotation.length; row++) {
-			for (column=0; column<rotation[0].length; column++) {
-				if (rotation[row][column] === 1 && leftMost > column) {
-					leftMost = column;
-				} 
-			}
-		}
-		return leftMost;
-    },
-    
-    pieceRight: function () {
-        if (this.currentPiece  === undefined) {
-            return -1;
-        }
-        var rotation = this.pieces[this.currentPiece].rotations[this.currentRotation];
-        var row=0;
-		var column=0;
-		var rightMost=0;
-		for (row=0; row<rotation.length; row++) {
-			for (column=0; column<rotation[0].length; column++) {
-				if (rotation[row][column] === 1 && rightMost < column) {
-					rightMost = column;
-				} 
-			}
-		}		
-		return rightMost;
-    }, 
-    
+		    
     findCompletedRows: function () {
         var row=0;
 		var column=0;
@@ -467,7 +352,7 @@ var TetrisModel = {
 		column = 0;
 		row = 0;
 		
-		this.drawBoard();
+		this.renderBoard() 
 	},
 
 	eraseBlock: function () {
@@ -487,12 +372,13 @@ var TetrisModel = {
 				}
 			}
 		}
-	},	
-	
-	drawBoard: function () {
+	},
+
+	renderBoard: function () {
 		this.fireEvent("renderBoard", {
 			board: this.board
-		});  	
+		}); 
 	}
+	
 };
 
