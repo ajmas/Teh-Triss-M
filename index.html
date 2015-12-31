@@ -2,24 +2,23 @@
 <head>
 
     <title>Teh Triss</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
     <style type="text/css">
 
-        .block {
-            width: 20px;
-            height: 20px;
-            background-color: rgba(0,0,0,0.8);
-            border: solid 1px rgba(0,0,0,0);
-            display: inline-block;
-
-
+        rect.block {
+            fill: rgba(0,0,0,1);
+            stroke: rgba(0,0,0,1);
         }
 
-        .block.active {
-            border: solid 1px black;
+        rect.block.active {
+            stroke: black;
         }
 
         #board {
             width: 220px;
+            height: 440px;
             margin: 0 auto;
             margin-top: 50px;
             color: green;
@@ -30,21 +29,33 @@
             width: 200px;
             background: rgba(0,0,0,0.5);
             color: white;
+            margin-left: 20px;
             margin-right: 20px;
             padding: 4px;
             border-radius: 4px;
             border: rgba(255,255,255,0.5) 1px solid;
             margin-top: 10px;
+            display: inline-block;
         }    
 
         #dataZone {
             margin: 0 auto;
-            display: inline-block;
-            float: left;
-            margin: 40px;
-
+            width: 760px;
         }
+        
+        #controls {
+            display: none;
+        }
+        
+        
+        #artCredit {
+            display: none;
+        }        
 
+        #nextPiece {
+            display: none;
+        }  
+        
         h1 {
 
             text-align: center;
@@ -63,15 +74,68 @@
         	display: none;
         }
 
+        #footer {
+            margin: 10 auto;
+            text-align: center;
+        }
+        
+        #footer ul {
+            padding: 0px
+        }
+                
+        
+        #footer li {
+            display: inline-block;
+            margin-left: 10px;
+            margin-right: 10px;
+
+        }
+        
+        #keyPadLeft {
+            width: 200px;
+            height: 500px; 
+            top: 200px;      
+                   
+            left: 15px;
+            position: absolute;
+        }
+
+        #keyPadRight {
+            width: 200px;
+            height: 500px;  
+            top: 200px;      
+            right: 0px;
+            position: absolute;
+        }
+        
+        .keypad .button {
+            fill: rgba(0,0,0,0.5);
+            stroke: white;
+        }
+        
+        .keypad text {
+            fill: white;
+        }
+                
+        .keypad .button:active {
+            fill: white;
+            stroke: white;
+            stroke-width: 4px;
+        }     
+                 
     </style>
 
-    <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
-    
+    <!-- third-party javascript files -->
+    <script type="text/javascript" src="js/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="js/snap.svg-min.js"></script>
+
+    <!-- project javascript files -->    
     <script type="text/javascript" src="themes/default/default-theme.js"></script>
     <script type="text/javascript" src="js/pieces.js"></script>
     <script type="text/javascript" src="js/model.js"></script>
-    <script type="text/javascript" src="js/viewer.js"></script>
+    <script type="text/javascript" src="js/viewer-svg.js"></script>
     <script type="text/javascript" src="js/controller.js"></script>
+    <script type="text/javascript" src="js/keypad.js"></script>
     
     <script type="text/javascript">
 
@@ -79,6 +143,60 @@
 			TetrisModel.initialise();
 			TetrisViewer.initialise(TetrisModel, 'board');
 			TetrisController.initialise(TetrisModel);
+			Keypad.initialise('keyPadLeft', TetrisModel);
+			Keypad.initialise('keyPadRight', TetrisModel);
+
+
+
+            Keypad.registerButton('#keyPadLeft-0', 'START', function() {
+                TetrisModel.start();
+            });
+            
+            Keypad.registerButton('#keyPadLeft-1', 'MOV LEFT', function() {
+                TetrisModel.moveLeft();
+            });
+            
+            Keypad.registerButton('#keyPadLeft-2', 'MOV RGHT', function() {
+                TetrisModel.moveRight();                            
+            });     
+            
+            Keypad.registerButton('#keyPadLeft-4', 'ROT CW', function() {
+                TetrisModel.rotateClockwise();                            
+            });   
+            
+            Keypad.registerButton('#keyPadLeft-5', 'ROT CCW', function() {
+                TetrisModel.rotateCounterClockwise();                            
+            });   
+            
+            Keypad.registerButton('#keyPadLeft-6', 'DROP', function() {
+                TetrisModel.drop();                            
+            });  
+            
+            
+            Keypad.registerButton('#keyPadRight-0', 'START', function() {
+                TetrisModel.start();
+            });
+            
+            Keypad.registerButton('#keyPadRight-1', 'MOV LEFT', function() {
+                TetrisModel.moveLeft();
+            });
+            
+            Keypad.registerButton('#keyPadRight-2', 'MOV RGHT', function() {
+                TetrisModel.moveRight();                            
+            });     
+            
+            Keypad.registerButton('#keyPadRight-4', 'ROT CW', function() {
+                TetrisModel.rotateClockwise();                            
+            });   
+            
+            Keypad.registerButton('#keyPadRight-5', 'ROT CCW', function() {
+                TetrisModel.rotateCounterClockwise();                            
+            });   
+            
+            Keypad.registerButton('#keyPadRight-6', 'DROP', function() {
+                TetrisModel.drop();                            
+            });                        
+                                           
 		});
 
     </script>
@@ -105,8 +223,20 @@
         <div id="artCredit" class="data"></div>        
     </div>
 
-    <div id="board">
+    <div id="keyPadLeft" class="keypad"></div>
+    <div id="board"></div>
+    <div id="keyPadRight" class="keypad"></div>
 
+    <div id="footer">
+            Keyboard controls:
+            <ul>
+            <li>Left: J</li>
+            <li>Right: L</li>
+            <li>Rotate: K</li>
+            <li>Drop: space</li> 
+            </ul>  
+            </div>  
+            <div id="artCredit"></div>
 
     </div>
     
